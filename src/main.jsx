@@ -14,7 +14,7 @@ root.render(
     config={{
       appearance: {
         theme: "dark",
-        logo: "https://ibb.co/vCP9TkQ0g",
+        logo: "https://ibb.co/vCP9TkQ0",
       },
       embeddedWallets: {
         createOnLogin: "users-without-wallets",
