@@ -3,6 +3,8 @@ import {
   IconChevronRight,
   IconFileUpload,
   IconProgress,
+  IconX,
+  IconFile,
 } from "@tabler/icons-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useStateContext } from "../../context/index";
@@ -26,6 +28,7 @@ function SingleRecordDetails() {
   const [filename, setFilename] = useState("");
   const [filetype, setFileType] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [files, setFiles] = useState(state.files || []);
 
   const { updateRecord } = useStateContext();
 
@@ -35,6 +38,7 @@ function SingleRecordDetails() {
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
+    setUploadSuccess(false);
   };
 
   const handleFileChange = (e) => {
@@ -55,12 +59,23 @@ function SingleRecordDetails() {
   };
 
   const handleFileUpload = async () => {
+    if (!file) return;
+    
     setUploading(true);
     setUploadSuccess(false);
 
     const genAI = new GoogleGenerativeAI(geminiApiKey);
 
     try {
+      // Create file metadata
+      const fileMetadata = {
+        id: Date.now().toString(),
+        name: file.name,
+        size: file.size,
+        type: file.type,
+        uploadedAt: new Date().toISOString(),
+      };
+
       const base64Data = await readFileAsBase64(file);
 
       const imageParts = [
@@ -81,22 +96,44 @@ function SingleRecordDetails() {
       const result = await model.generateContent([prompt, ...imageParts]);
       const response = await result.response;
       const text = response.text();
-      setAnalysisResult(text);
+      
+      // Update the record with new file and analysis
+      const updatedFiles = [...files, fileMetadata];
       const updatedRecord = await updateRecord({
         documentID: state.id,
         analysisResult: text,
         kanbanRecords: "",
+        files: updatedFiles,
       });
+
+      // Update local state
+      setAnalysisResult(text);
+      setFiles(updatedFiles);
       setUploadSuccess(true);
-      setIsModalOpen(false); // Close the modal after a successful upload
+      setIsModalOpen(false);
       setFilename("");
       setFile(null);
       setFileType("");
+      
+      console.log("File uploaded and record updated:", updatedRecord);
     } catch (error) {
       console.error("Error uploading file:", error);
       setUploadSuccess(false);
     } finally {
       setUploading(false);
+    }
+  };
+
+  const removeFile = async (fileId) => {
+    try {
+      const updatedFiles = files.filter(f => f.id !== fileId);
+      await updateRecord({
+        documentID: state.id,
+        files: updatedFiles,
+      });
+      setFiles(updatedFiles);
+    } catch (error) {
+      console.error("Error removing file:", error);
     }
   };
 
@@ -158,26 +195,38 @@ function SingleRecordDetails() {
             Created: {state.createdAt ? new Date(state.createdAt).toLocaleString() : "Unknown"}
           </div>
           <div className="text-xs text-green-400 font-semibold">
-            Files: {state.files ? state.files.length : 0}
+            Files: {files.length}
           </div>
         </div>
         <div className="mt-4">
           <h3 className="text-lg font-semibold text-white mb-2">Files</h3>
-          {state.files && state.files.length > 0 ? (
-            <ul className="space-y-2">
-              {state.files.map((file, idx) => (
-                <li key={idx} className="flex items-center gap-2 text-sm text-gray-300">
-                  <span className="font-mono">{file.name || "Unnamed file"}</span>
-                  {file.uploadedAt && (
-                    <span className="text-xs text-gray-500 ml-2">
-                      ({new Date(file.uploadedAt).toLocaleString()})
-                    </span>
-                  )}
-                </li>
+          {files.length > 0 ? (
+            <div className="space-y-2">
+              {files.map((file) => (
+                <div key={file.id} className="flex items-center justify-between p-3 rounded-lg bg-[#2a2a35] hover:bg-[#3a3a45] transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                      <IconFile size={16} className="text-blue-400" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-white">{file.name}</div>
+                      <div className="text-xs text-gray-400">
+                        {(file.size / 1024 / 1024).toFixed(2)} MB • {new Date(file.uploadedAt).toLocaleString()}
+                      </div>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => removeFile(file.id)}
+                    className="text-gray-400 hover:text-red-400 transition-colors p-1"
+                    title="Remove file"
+                  >
+                    <IconX size={16} />
+                  </button>
+                </div>
               ))}
-            </ul>
+            </div>
           ) : (
-            <div className="text-gray-500 italic">No files uploaded yet.</div>
+            <div className="text-gray-500 italic text-center py-4">No files uploaded yet.</div>
           )}
         </div>
       </div>
