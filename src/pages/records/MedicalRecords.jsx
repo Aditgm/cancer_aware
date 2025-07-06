@@ -34,7 +34,6 @@ const MedicalRecords = () => {
         setLoading(false);
       }
     };
-
     loadData();
   }, [user, fetchUserByEmail, fetchUserRecords]);
 
@@ -44,13 +43,8 @@ const MedicalRecords = () => {
     }
   }, [records]);
 
-  const handleOpenModal = () => {
-    setIsModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-  };
+  const handleOpenModal = () => setIsModalOpen(true);
+  const handleCloseModal = () => setIsModalOpen(false);
 
   const createFolder = async (foldername) => {
     try {
@@ -62,7 +56,6 @@ const MedicalRecords = () => {
           kanbanRecords: "",
           createdBy: user.email.address,
         });
-
         if (newRecord) {
           fetchUserRecords(user.email.address);
           handleCloseModal();
@@ -129,4 +122,4 @@ const MedicalRecords = () => {
   );
 };
 
-export default MedicalRecords;
+export default MedicalRecords; 
