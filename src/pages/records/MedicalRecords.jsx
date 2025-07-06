@@ -14,28 +14,57 @@ const MedicalRecords = () => {
     fetchUserRecords,
     createRecord,
     fetchUserByEmail,
+    createUser,
     currentUser,
   } = useStateContext();
   const [userRecords, setUserRecords] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const loadData = async () => {
       try {
         setLoading(true);
+        setError(null);
         if (user && user.email?.address) {
           await fetchUserByEmail(user.email.address);
-          await fetchUserRecords(user.email.address);
         }
       } catch (err) {
-        console.error("Error loading records:", err);
+        setError("Failed to load user.");
       } finally {
         setLoading(false);
       }
     };
     loadData();
-  }, [user, fetchUserByEmail, fetchUserRecords]);
+  }, [user, fetchUserByEmail]);
+
+  useEffect(() => {
+    const ensureUser = async () => {
+      if (user && user.email?.address && !currentUser) {
+        await createUser({
+          username: user.email.address.split("@")[0],
+          age: 0,
+          location: "",
+          folders: [],
+          treatmentCounts: 0,
+          folder: [],
+          createdBy: user.email.address,
+        });
+        await fetchUserByEmail(user.email.address);
+      }
+    };
+    ensureUser();
+  }, [user, currentUser, createUser, fetchUserByEmail]);
+
+  useEffect(() => {
+    const fetchRecords = async () => {
+      if (user && user.email?.address) {
+        await fetchUserRecords(user.email.address);
+      }
+    };
+    fetchRecords();
+  }, [user, fetchUserRecords, currentUser]);
 
   useEffect(() => {
     if (records) {
@@ -48,21 +77,26 @@ const MedicalRecords = () => {
 
   const createFolder = async (foldername) => {
     try {
-      if (currentUser) {
-        const newRecord = await createRecord({
-          userId: currentUser.id,
-          recordName: foldername,
-          analysisResult: "",
-          kanbanRecords: "",
-          createdBy: user.email.address,
-        });
-        if (newRecord) {
-          fetchUserRecords(user.email.address);
-          handleCloseModal();
-        }
+      setError(null);
+      if (!currentUser) {
+        setError("User not found. Please try again.");
+        return;
+      }
+      const newRecord = await createRecord({
+        userId: currentUser.id,
+        recordName: foldername,
+        analysisResult: "",
+        kanbanRecords: "",
+        createdBy: user.email.address,
+      });
+      if (newRecord) {
+        await fetchUserRecords(user.email.address);
+        handleCloseModal();
+      } else {
+        setError("Failed to create folder. Please try again.");
       }
     } catch (e) {
-      console.error("Error creating record:", e);
+      setError("Error creating folder.");
       handleCloseModal();
     }
   };
@@ -102,6 +136,10 @@ const MedicalRecords = () => {
         onClose={handleCloseModal}
         onCreate={createFolder}
       />
+
+      {error && (
+        <div className="w-full text-center text-red-400 mt-4">{error}</div>
+      )}
 
       <div className="grid w-full gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4">
         {userRecords && userRecords.length > 0 ? (
