@@ -6,7 +6,7 @@ import { useStateContext } from "../../context/index";
 import CreateRecordModal from "./components/create-record-modal";
 import RecordCard from "./components/record-card";
 
-const Index = () => {
+const MedicalRecords = () => {
   const navigate = useNavigate();
   const { user } = usePrivy();
   const {
@@ -19,22 +19,17 @@ const Index = () => {
   const [userRecords, setUserRecords] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
 
   useEffect(() => {
     const loadData = async () => {
       try {
         setLoading(true);
-        setError(null);
-        
         if (user && user.email?.address) {
-          console.log("Loading user data for:", user.email.address);
           await fetchUserByEmail(user.email.address);
           await fetchUserRecords(user.email.address);
         }
       } catch (err) {
         console.error("Error loading records:", err);
-        setError("Failed to load records");
       } finally {
         setLoading(false);
       }
@@ -45,9 +40,7 @@ const Index = () => {
 
   useEffect(() => {
     if (records) {
-      console.log("Records updated:", records);
       setUserRecords(records);
-      localStorage.setItem("userRecords", JSON.stringify(records));
     }
   }, [records]);
 
@@ -94,17 +87,7 @@ const Index = () => {
     return (
       <div className="flex flex-wrap gap-[26px]">
         <div className="w-full flex justify-center items-center min-h-[400px]">
-          <div className="text-white text-lg">Loading records...</div>
-        </div>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex flex-wrap gap-[26px]">
-        <div className="w-full flex justify-center items-center min-h-[400px]">
-          <div className="text-red-400 text-lg">{error}</div>
+          <div className="text-white text-lg">Loading...</div>
         </div>
       </div>
     );
@@ -146,4 +129,4 @@ const Index = () => {
   );
 };
 
-export default Index;
+export default MedicalRecords;
