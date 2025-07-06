@@ -116,6 +116,25 @@ export const StateContextProvider = ({ children }) => {
     }
   }, []);
 
+  // Function to update user details
+  const updateUser = useCallback(async (userId, updatedData) => {
+    try {
+      const updatedUser = await db
+        .update(Users)
+        .set(updatedData)
+        .where(eq(Users.id, userId))
+        .returning()
+        .execute();
+      if (updatedUser.length > 0) {
+        setCurrentUser(updatedUser[0]);
+      }
+      return updatedUser[0];
+    } catch (error) {
+      console.error("Error updating user:", error);
+      return null;
+    }
+  }, []);
+
   return (
     <StateContext.Provider
       value={{
@@ -128,6 +147,7 @@ export const StateContextProvider = ({ children }) => {
         createRecord,
         currentUser,
         updateRecord,
+        updateUser,
       }}
     >
       {children}
