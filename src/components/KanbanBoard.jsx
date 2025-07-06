@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useMemo, useState, useEffect } from "react";
 import {
   DndContext,
   DragOverlay,
@@ -11,30 +11,59 @@ import { createPortal } from "react-dom";
 import ColumnContainer from "./ColumnContainer";
 import TaskCard from "./TaskCard";
 import { IconPlus } from "@tabler/icons-react";
+import { useStateContext } from "../context";
+import { usePrivy } from "@privy-io/react-auth";
 
-function KanbanBoard({ state }) {
-  const defaultCols =
-    state?.state?.columns?.map((col) => ({
-      id: col?.id,
-      title: col?.title,
-    })) || [];
+function KanbanBoard() {
+  const { user } = usePrivy();
+  const {
+    currentUser,
+    kanbanBoard,
+    fetchKanbanBoard,
+    createKanbanBoard,
+    updateKanbanBoard,
+  } = useStateContext();
 
-  const defaultTasks =
-    state?.state?.tasks?.map((task) => ({
-      id: task?.id,
-      columnId: task?.columnId,
-      content: task?.content,
-    })) || [];
-
-  const [columns, setColumns] = useState(defaultCols);
-  const columnsId = useMemo(() => columns.map((col) => col.id), [columns]);
-  const [tasks, setTasks] = useState(defaultTasks);
+  const [columns, setColumns] = useState([]);
+  const [tasks, setTasks] = useState([]);
   const [activeColumn, setActiveColumn] = useState(null);
   const [activeTask, setActiveTask] = useState(null);
-
+  const columnsId = useMemo(() => columns.map((col) => col.id), [columns]);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 10 } }),
   );
+  const [loading, setLoading] = useState(true);
+
+  // Load Kanban board for user on mount or when user changes
+  useEffect(() => {
+    const loadBoard = async () => {
+      setLoading(true);
+      if (currentUser) {
+        await fetchKanbanBoard(currentUser.id);
+      }
+      setLoading(false);
+    };
+    loadBoard();
+  }, [currentUser, fetchKanbanBoard]);
+
+  // Set columns/tasks from kanbanBoard
+  useEffect(() => {
+    if (kanbanBoard) {
+      setColumns(kanbanBoard.columns || []);
+      setTasks(kanbanBoard.tasks || []);
+    } else {
+      setColumns([]);
+      setTasks([]);
+    }
+  }, [kanbanBoard]);
+
+  // Save board to DB on change
+  useEffect(() => {
+    if (currentUser) {
+      updateKanbanBoard(currentUser.id, { columns, tasks });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [columns, tasks]);
 
   return (
     <div className="mt-5 min-h-screen w-72 text-white">
