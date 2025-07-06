@@ -24,32 +24,34 @@ const MedicalRecords = () => {
 
   useEffect(() => {
     const loadData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        if (user && user.email?.address) {
-          await fetchUserByEmail(user.email.address);
-        }
-      } catch (err) {
-        setError("Failed to load user.");
-      } finally {
-        setLoading(false);
+      setLoading(true);
+      setError(null);
+      if (user && user.email?.address) {
+        await fetchUserByEmail(user.email.address);
       }
+      setLoading(false);
     };
     loadData();
   }, [user, fetchUserByEmail]);
 
   useEffect(() => {
     const ensureUser = async () => {
-      if (user && user.email?.address && !currentUser) {
+      if (user?.email?.address && currentUser === null) {
+        const username =
+          user.name ||
+          user.displayName ||
+          (user.email?.address ? user.email.address.split("@")[0] : "");
         await createUser({
-          username: user.email.address.split("@")[0],
+          username,
           age: 0,
           location: "",
           folders: [],
           treatmentCounts: 0,
           folder: [],
           createdBy: user.email.address,
+          cancerHistory: "no",
+          screeningStatus: "never",
+          cancerType: "",
         });
         await fetchUserByEmail(user.email.address);
       }
