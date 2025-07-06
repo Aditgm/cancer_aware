@@ -17,6 +17,9 @@ export const Users = pgTable("users", {
     .notNull()
     .default(sql`ARRAY[]::text[]`),
   createdBy: varchar("created_by").notNull(),
+  cancerHistory: varchar("cancer_history", { length: 10 }).notNull().default("no"),
+  screeningStatus: varchar("screening_status", { length: 20 }).notNull().default("never"),
+  cancerType: varchar("cancer_type", { length: 100 }),
 });
 
 // records schema
