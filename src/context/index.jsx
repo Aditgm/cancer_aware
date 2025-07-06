@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback } from "react";
 import { db } from "../utils/dbConfig"; // Adjust the path to your dbConfig
 import { Users, Records, KanbanBoards } from "../utils/schema"; // Adjust the path to your schema definitions
+import { runMigrations } from "../utils/migrate"; // Import migration function
 import { eq } from "drizzle-orm";
 
 // Create a context
@@ -12,6 +13,17 @@ export const StateContextProvider = ({ children }) => {
   const [records, setRecords] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
   const [kanbanBoard, setKanbanBoard] = useState(null);
+
+  // Run migrations on startup
+  React.useEffect(() => {
+    runMigrations().then((success) => {
+      if (success) {
+        console.log("Database migrations completed successfully");
+      } else {
+        console.error("Database migrations failed");
+      }
+    });
+  }, []);
 
   // Function to fetch all users
   const fetchUsers = useCallback(async () => {
@@ -86,6 +98,18 @@ export const StateContextProvider = ({ children }) => {
   const createRecord = useCallback(async (recordData) => {
     try {
       console.log("Creating record:", recordData);
+      
+      // Validate required fields
+      if (!recordData.userId) {
+        throw new Error("userId is required");
+      }
+      if (!recordData.recordName) {
+        throw new Error("recordName is required");
+      }
+      if (!recordData.createdBy) {
+        throw new Error("createdBy is required");
+      }
+      
       const newRecord = await db
         .insert(Records)
         .values(recordData)
@@ -96,6 +120,12 @@ export const StateContextProvider = ({ children }) => {
       return newRecord[0];
     } catch (error) {
       console.error("Error creating record:", error);
+      console.error("Error details:", {
+        message: error.message,
+        code: error.code,
+        detail: error.detail,
+        hint: error.hint
+      });
       return null;
     }
   }, []);
@@ -207,6 +237,19 @@ export const StateContextProvider = ({ children }) => {
     }
   }, []);
 
+  // Test database connection
+  const testDatabaseConnection = useCallback(async () => {
+    try {
+      console.log("Testing database connection...");
+      const result = await db.select().from(Users).limit(1).execute();
+      console.log("Database connection successful:", result);
+      return true;
+    } catch (error) {
+      console.error("Database connection failed:", error);
+      return false;
+    }
+  }, []);
+
   return (
     <StateContext.Provider
       value={{
@@ -225,6 +268,7 @@ export const StateContextProvider = ({ children }) => {
         fetchKanbanBoard,
         createKanbanBoard,
         updateKanbanBoard,
+        testDatabaseConnection,
       }}
     >
       {children}
