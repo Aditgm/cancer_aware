@@ -52,6 +52,12 @@ function TaskCard({ task, deleteTask, updateTask }) {
         {...listeners}
         className="relative flex h-[100px] min-h-[100px] cursor-grab items-center rounded-xl bg-mainBackgroundColor p-2.5 text-left hover:ring-2 hover:ring-inset hover:ring-green-500"
       >
+        <input
+          type="checkbox"
+          className="rounded-full border-2 border-green-500 w-5 h-5 accent-green-500 mr-2"
+          onChange={() => deleteTask(task.id)}
+          title="Mark as complete"
+        />
         <textarea
           className="h-[90%] w-full resize-none rounded border-none bg-transparent text-white focus:outline-none"
           value={task.content}
@@ -65,6 +71,11 @@ function TaskCard({ task, deleteTask, updateTask }) {
           }}
           onChange={(e) => updateTask(task.id, e.target.value)}
         />
+        {task.dueDate && (
+          <div className="absolute bottom-2 right-4 text-xs text-gray-400">
+            Due: {new Date(task.dueDate).toLocaleString()}
+          </div>
+        )}
       </div>
     );
   }
@@ -84,10 +95,23 @@ function TaskCard({ task, deleteTask, updateTask }) {
         setMouseIsOver(false);
       }}
     >
+      <input
+        type="checkbox"
+        className="rounded-full border-2 border-green-500 w-5 h-5 accent-green-500 mr-2"
+        onChange={(e) => {
+          e.stopPropagation();
+          deleteTask(task.id);
+        }}
+        title="Mark as complete"
+      />
       <p className="my-auto h-[90%] w-full overflow-y-auto overflow-x-hidden whitespace-pre-wrap">
         {task.content}
       </p>
-
+      {task.dueDate && (
+        <div className="absolute bottom-2 right-4 text-xs text-gray-400">
+          Due: {new Date(task.dueDate).toLocaleString()}
+        </div>
+      )}
       {mouseIsOver && (
         <button
           onClick={() => {
