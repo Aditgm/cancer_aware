@@ -99,10 +99,14 @@ function KanbanBoard({ state }) {
   );
 
   function createTask(columnId) {
+    const taskName = prompt("Enter task name:");
+    if (!taskName) return;
+    const dueDate = prompt("Enter due date and time (YYYY-MM-DD HH:MM, optional):");
     const newTask = {
       id: generateId(),
       columnId,
-      content: `Task ${tasks.length + 1}`,
+      content: taskName,
+      dueDate: dueDate ? new Date(dueDate).toISOString() : null,
     };
     setTasks([...tasks, newTask]);
   }
