@@ -64,8 +64,17 @@ function ColumnContainer({
         }}
         className="text-md m-2 flex h-[60px] cursor-grab items-center justify-between rounded-xl bg-[#13131a] p-3 font-bold"
       >
-        <div className="flex gap-2">
-          {!editMode && column.title}
+        <div className="flex gap-2 items-center">
+          {!editMode && (
+            <>
+              <span>{column.title || <span className="italic text-gray-400">[Type not set]</span>}</span>
+              {column.type && (
+                <span className="ml-2 rounded-full bg-green-700 px-2 py-1 text-xs text-white">
+                  {column.type}
+                </span>
+              )}
+            </>
+          )}
           {editMode && (
             <input
               className="rounded border bg-black px-2 outline-none focus:border-green-500"
@@ -79,6 +88,7 @@ function ColumnContainer({
                 if (e.key !== "Enter") return;
                 setEditMode(false);
               }}
+              placeholder="Enter column type"
             />
           )}
         </div>
