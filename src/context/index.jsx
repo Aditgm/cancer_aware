@@ -117,6 +117,25 @@ export const StateContextProvider = ({ children }) => {
     }
   }, []);
 
+  const deleteRecord = useCallback(async (recordId) => {
+    try {
+      console.log("Deleting record:", recordId);
+      const deletedRecords = await db
+        .delete(Records)
+        .where(eq(Records.id, recordId))
+        .returning();
+      console.log("Record deleted:", deletedRecords);
+      
+      // Update local state
+      setRecords((prevRecords) => prevRecords.filter(record => record.id !== recordId));
+      
+      return deletedRecords;
+    } catch (error) {
+      console.error("Error deleting record:", error);
+      return null;
+    }
+  }, []);
+
   // Function to update user details
   const updateUser = useCallback(async (userId, updatedData) => {
     try {
@@ -200,6 +219,7 @@ export const StateContextProvider = ({ children }) => {
         createRecord,
         currentUser,
         updateRecord,
+        deleteRecord,
         updateUser,
         kanbanBoard,
         fetchKanbanBoard,
