@@ -14,7 +14,7 @@ root.render(
     config={{
       appearance: {
         theme: "dark",
-        logo: "https://i.ibb.co/vCP9TkQ/logo.png",
+        logo: "https://i.ibb.co/HLzZbqx5/image45.webp",
         brandColor: "#1dc071",
       },
       embeddedWallets: {
