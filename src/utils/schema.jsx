@@ -1,7 +1,6 @@
 import { sql } from "drizzle-orm";
-import { integer, varchar, pgTable, serial, text } from "drizzle-orm/pg-core";
+import { integer, varchar, pgTable, serial, text, jsonb } from "drizzle-orm/pg-core";
 
-// users schema
 export const Users = pgTable("users", {
   id: serial("id").primaryKey(),
   username: varchar("username").notNull(),
@@ -22,7 +21,6 @@ export const Users = pgTable("users", {
   cancerType: varchar("cancer_type", { length: 100 }),
 });
 
-// records schema
 export const Records = pgTable("records", {
   id: serial("id").primaryKey(),
   userId: integer("user_id")
@@ -32,4 +30,10 @@ export const Records = pgTable("records", {
   analysisResult: varchar("analysis_result").notNull(),
   kanbanRecords: varchar("kanban_records").notNull(),
   createdBy: varchar("created_by").notNull(),
+});
+
+export const KanbanBoards = pgTable("kanban_boards", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").references(() => Users.id).notNull(),
+  boardData: jsonb("board_data").notNull(),
 });
