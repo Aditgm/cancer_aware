@@ -12,6 +12,7 @@ const Profile = () => {
   // Try to fetch user on mount
   useEffect(() => {
     if (!currentUser && user?.email?.address) {
+      console.log("Fetching user by email:", user.email.address);
       fetchUserByEmail(user.email.address);
     }
   }, [currentUser, fetchUserByEmail, user]);
@@ -20,6 +21,7 @@ const Profile = () => {
   useEffect(() => {
     const ensureUser = async () => {
       if (user?.email?.address && currentUser === null) {
+        console.log("User not found, creating user:", user.email.address);
         await createUser({
           username: user.email.address.split("@")[0],
           age: 0,
@@ -32,11 +34,19 @@ const Profile = () => {
           screeningStatus: "never",
           cancerType: "",
         });
+        console.log("User created, fetching again:", user.email.address);
         await fetchUserByEmail(user.email.address);
       }
     };
     ensureUser();
   }, [user, currentUser, createUser, fetchUserByEmail]);
+
+  // Fallback UI if user profile fails to load
+  const [timeout, setTimeoutState] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setTimeoutState(true), 5000);
+    return () => clearTimeout(timer);
+  }, []);
 
   useEffect(() => {
     if (!currentUser) {
@@ -73,6 +83,16 @@ const Profile = () => {
     setLoading(false);
     setEditing(false);
   };
+
+  if (!currentUser && timeout) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <div className="text-lg text-red-500">
+          Failed to load user profile. Please try refreshing or contact support.
+        </div>
+      </div>
+    );
+  }
 
   if (!currentUser) {
     return (
