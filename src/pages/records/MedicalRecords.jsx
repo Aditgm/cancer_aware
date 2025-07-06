@@ -16,6 +16,7 @@ const MedicalRecords = () => {
     fetchUserByEmail,
     createUser,
     currentUser,
+    testDatabaseConnection,
   } = useStateContext();
   const [userRecords, setUserRecords] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -78,6 +79,15 @@ const MedicalRecords = () => {
   const handleOpenModal = () => setIsModalOpen(true);
   const handleCloseModal = () => setIsModalOpen(false);
 
+  const handleTestDatabase = async () => {
+    const isConnected = await testDatabaseConnection();
+    if (isConnected) {
+      alert("Database connection successful!");
+    } else {
+      alert("Database connection failed! Check console for details.");
+    }
+  };
+
   const createFolder = async (foldername) => {
     try {
       setError(null);
@@ -85,15 +95,21 @@ const MedicalRecords = () => {
         setError("User not found. Please try again.");
         return;
       }
+      
+      console.log("Creating record with data:", {
+        userId: currentUser.id,
+        recordName: foldername,
+        createdBy: user.email.address,
+      });
+      
       const newRecord = await createRecord({
         userId: currentUser.id,
         recordName: foldername,
-        analysisResult: "",
-        kanbanRecords: "",
         createdBy: user.email.address,
-        createdAt: new Date().toISOString(),
-        files: [],
       });
+      
+      console.log("Record creation result:", newRecord);
+      
       if (newRecord) {
         await fetchUserRecords(user.email.address);
         handleCloseModal();
@@ -101,7 +117,8 @@ const MedicalRecords = () => {
         setError("Failed to create folder. Please try again.");
       }
     } catch (e) {
-      setError("Error creating folder.");
+      console.error("Error creating folder:", e);
+      setError("Error creating folder: " + e.message);
       handleCloseModal();
     }
   };
@@ -134,6 +151,14 @@ const MedicalRecords = () => {
       >
         <IconCirclePlus />
         Create Record
+      </button>
+
+      <button
+        type="button"
+        className="mt-6 inline-flex items-center gap-x-2 rounded-full border border-gray-200 bg-blue-500 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-blue-600 disabled:pointer-events-none disabled:opacity-50 dark:border-neutral-700"
+        onClick={handleTestDatabase}
+      >
+        Test Database
       </button>
 
       <CreateRecordModal
