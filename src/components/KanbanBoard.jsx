@@ -124,9 +124,16 @@ function KanbanBoard({ state }) {
   }
 
   function createNewColumn() {
+    const types = ["Medicines", "Scanning", "Screening Schedule", "Other"];
+    const type = prompt(
+      "Enter column type (e.g., Medicines, Scanning, Screening Schedule):",
+      types[0]
+    );
+    if (!type) return;
     const newColumn = {
       id: generateId(),
-      title: `Column ${columns.length + 1}`,
+      title: type,
+      type,
     };
     setColumns([...columns, newColumn]);
   }
