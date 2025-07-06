@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useCallback } from "react";
 import { db } from "../utils/dbConfig"; // Adjust the path to your dbConfig
-import { Users, Records } from "../utils/schema"; // Adjust the path to your schema definitions
+import { Users, Records, KanbanBoards } from "../utils/schema"; // Adjust the path to your schema definitions
 import { eq } from "drizzle-orm";
 
 // Create a context
@@ -11,6 +11,7 @@ export const StateContextProvider = ({ children }) => {
   const [users, setUsers] = useState([]);
   const [records, setRecords] = useState([]);
   const [currentUser, setCurrentUser] = useState(null);
+  const [kanbanBoard, setKanbanBoard] = useState(null);
 
   // Function to fetch all users
   const fetchUsers = useCallback(async () => {
@@ -135,6 +136,58 @@ export const StateContextProvider = ({ children }) => {
     }
   }, []);
 
+  // Function to fetch Kanban board for a user
+  const fetchKanbanBoard = useCallback(async (userId) => {
+    try {
+      const result = await db
+        .select()
+        .from(KanbanBoards)
+        .where(eq(KanbanBoards.userId, userId))
+        .execute();
+      if (result.length > 0) {
+        setKanbanBoard(result[0].boardData);
+      } else {
+        setKanbanBoard(null);
+      }
+    } catch (error) {
+      console.error("Error fetching Kanban board:", error);
+      setKanbanBoard(null);
+    }
+  }, []);
+
+  // Function to create a new Kanban board for a user
+  const createKanbanBoard = useCallback(async (userId, boardData) => {
+    try {
+      const newBoard = await db
+        .insert(KanbanBoards)
+        .values({ userId, boardData })
+        .returning()
+        .execute();
+      setKanbanBoard(newBoard[0].boardData);
+      return newBoard[0];
+    } catch (error) {
+      console.error("Error creating Kanban board:", error);
+      return null;
+    }
+  }, []);
+
+  // Function to update Kanban board for a user
+  const updateKanbanBoard = useCallback(async (userId, boardData) => {
+    try {
+      const updated = await db
+        .update(KanbanBoards)
+        .set({ boardData })
+        .where(eq(KanbanBoards.userId, userId))
+        .returning()
+        .execute();
+      setKanbanBoard(boardData);
+      return updated[0];
+    } catch (error) {
+      console.error("Error updating Kanban board:", error);
+      return null;
+    }
+  }, []);
+
   return (
     <StateContext.Provider
       value={{
@@ -148,6 +201,10 @@ export const StateContextProvider = ({ children }) => {
         currentUser,
         updateRecord,
         updateUser,
+        kanbanBoard,
+        fetchKanbanBoard,
+        createKanbanBoard,
+        updateKanbanBoard,
       }}
     >
       {children}
