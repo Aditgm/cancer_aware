@@ -5,7 +5,7 @@ import { usePrivy } from "@privy-io/react-auth";
 const Profile = () => {
   const { currentUser, fetchUserByEmail, updateUser } = useStateContext();
   const { user } = usePrivy();
-  const [form, setForm] = useState({ username: "", age: "", location: "" });
+   const [form, setForm] = useState({ username: "", age: "", location: "", cancerHistory: "no", screeningStatus: "never", cancerType: "" });
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -17,6 +17,9 @@ const Profile = () => {
         username: currentUser.username || "",
         age: currentUser.age || "",
         location: currentUser.location || "",
+        cancerHistory: currentUser.cancerHistory || "no",
+        screeningStatus: currentUser.screeningStatus || "never",
+        cancerType: currentUser.cancerType || "",
       });
     }
   }, [currentUser, fetchUserByEmail, user]);
@@ -34,6 +37,9 @@ const Profile = () => {
       username: form.username,
       age: Number(form.age),
       location: form.location,
+      cancerHistory: form.cancerHistory,
+      screeningStatus: form.screeningStatus,
+      cancerType: form.cancerHistory === "yes" ? form.cancerType : "",
     });
     setLoading(false);
     setEditing(false);
@@ -83,6 +89,39 @@ const Profile = () => {
               required
               className="mb-4 w-full rounded-lg bg-neutral-900 px-4 py-3 text-white focus:border-blue-600 focus:outline-none"
             />
+                        <label className="mb-1 text-sm text-gray-400">Cancer History:</label>
+            <select
+              name="cancerHistory"
+              value={form.cancerHistory}
+              onChange={handleChange}
+              className="mb-4 w-full rounded-lg bg-neutral-900 px-4 py-3 text-white focus:border-blue-600 focus:outline-none"
+            >
+              <option value="no">No</option>
+              <option value="yes">Yes</option>
+            </select>
+            <label className="mb-1 text-sm text-gray-400">Screening Status:</label>
+            <select
+              name="screeningStatus"
+              value={form.screeningStatus}
+              onChange={handleChange}
+              className="mb-4 w-full rounded-lg bg-neutral-900 px-4 py-3 text-white focus:border-blue-600 focus:outline-none"
+            >
+              <option value="never">Never</option>
+              <option value="scheduled">Scheduled</option>
+              <option value="completed">Completed</option>
+            </select>
+            {form.cancerHistory === "yes" && (
+              <>
+                <label className="mb-1 text-sm text-gray-400">Type of Cancer:</label>
+                <input
+                  type="text"
+                  name="cancerType"
+                  value={form.cancerType}
+                  onChange={handleChange}
+                  className="mb-4 w-full rounded-lg bg-neutral-900 px-4 py-3 text-white focus:border-blue-600 focus:outline-none"
+                />
+              </>
+            )}
             <button
               type="submit"
               className="w-full rounded-lg bg-[#1dc071] py-3 font-semibold text-white hover:bg-[#16a34a] transition"
@@ -123,6 +162,25 @@ const Profile = () => {
           <p className="text-lg font-semibold text-white">
             {currentUser.location}
           </p>
+          
+          <p className="mb-1 text-sm text-gray-400">Cancer History:</p>
+          <p className="mb-4 text-lg font-semibold text-white">
+            {currentUser.cancerHistory === "yes" ? "Yes" : "No"}
+          </p>
+
+          <p className="mb-1 text-sm text-gray-400">Screening Status:</p>
+          <p className="mb-4 text-lg font-semibold text-white">
+            {currentUser.screeningStatus}
+          </p>
+
+          {currentUser.cancerHistory === "yes" && (
+            <>
+              <p className="mb-1 text-sm text-gray-400">Type of Cancer:</p>
+              <p className="mb-4 text-lg font-semibold text-white">
+                {currentUser.cancerType}
+              </p>
+            </>
+          )}
         </div>
         <button
           className="mt-6 rounded-lg bg-[#8c6dfd] px-6 py-2 font-semibold text-white hover:bg-[#6d4ad1] transition"
