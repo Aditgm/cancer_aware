@@ -9,15 +9,4 @@ const sql = neon(
 
 export const db = drizzle(sql, { schema });
 
-// Test database connection
-export const testConnection = async () => {
-  try {
-    console.log("Testing database connection...");
-    const result = await sql`SELECT 1 as test`;
-    console.log("Database connection successful:", result);
-    return true;
-  } catch (error) {
-    console.error("Database connection failed:", error);
-    return false;
-  }
-};
+
