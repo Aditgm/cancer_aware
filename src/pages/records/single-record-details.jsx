@@ -5,6 +5,10 @@ import {
   IconProgress,
   IconX,
   IconFile,
+  IconEdit,
+  IconCheck,
+  IconTrash,
+  IconSettings,
 } from "@tabler/icons-react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useStateContext } from "../../context/index";
@@ -31,8 +35,14 @@ function SingleRecordDetails() {
   const [files, setFiles] = useState(state.files || []);
   const [analysisData, setAnalysisData] = useState(state.analysisData || null);
   const [analyzing, setAnalyzing] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingRecordName, setEditingRecordName] = useState(state.recordName || "");
+  const [editingAnalysis, setEditingAnalysis] = useState(analysisResult);
+  const [saving, setSaving] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [editingAnalysisData, setEditingAnalysisData] = useState(analysisData);
 
-  const { updateRecord } = useStateContext();
+  const { updateRecord, deleteRecord } = useStateContext();
 
   const handleOpenModal = () => {
     setIsModalOpen(true);
@@ -254,7 +264,298 @@ Focus on providing actionable, evidence-based recommendations while maintaining 
     setIsProcessing(false);
   };
 
+  const handleEditToggle = () => {
+    if (isEditMode) {
+      // Cancel editing - reset to original values
+      setEditingRecordName(state.recordName || "");
+      setEditingAnalysis(analysisResult);
+      setEditingAnalysisData(analysisData);
+    }
+    setIsEditMode(!isEditMode);
+  };
+
+  const handleSaveChanges = async () => {
+    setSaving(true);
+    try {
+      const updatedRecord = await updateRecord({
+        documentID: state.id,
+        recordName: editingRecordName,
+        analysisResult: editingAnalysis,
+        analysisData: editingAnalysisData,
+      });
+
+      // Update local state
+      setAnalysisResult(editingAnalysis);
+      setAnalysisData(editingAnalysisData);
+      setIsEditMode(false);
+      
+      console.log("Record updated:", updatedRecord);
+    } catch (error) {
+      console.error("Error updating record:", error);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const updateAnalysisSection = (section, field, value) => {
+    setEditingAnalysisData(prev => ({
+      ...prev,
+      [section]: {
+        ...prev[section],
+        [field]: value
+      }
+    }));
+  };
+
+  const updateAnalysisArray = (section, field, value) => {
+    setEditingAnalysisData(prev => ({
+      ...prev,
+      [section]: {
+        ...prev[section],
+        [field]: value
+      }
+    }));
+  };
+
+  const renderEditableAnalysisSection = () => {
+    if (!editingAnalysisData) {
+      return (
+        <div className="text-center py-8">
+          <div className="text-gray-500 dark:text-gray-400">
+            <IconFile size={48} className="mx-auto mb-4 opacity-50" />
+            <p className="text-lg font-medium">No Analysis Available</p>
+            <p className="text-sm">Upload a medical report to get AI-powered analysis</p>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-6">
+        {/* Summary Section */}
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-4">
+          <h3 className="text-lg font-semibold text-blue-900 dark:text-blue-100 mb-2">
+            Summary
+          </h3>
+          {isEditMode ? (
+            <textarea
+              value={editingAnalysisData.summary || ""}
+              onChange={(e) => setEditingAnalysisData(prev => ({ ...prev, summary: e.target.value }))}
+              className="w-full px-3 py-2 bg-white/80 dark:bg-blue-900/40 border border-blue-200 dark:border-blue-700 rounded-lg text-blue-900 dark:text-blue-100 placeholder-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              rows={2}
+              placeholder="Enter summary..."
+            />
+          ) : (
+            <p className="text-blue-800 dark:text-blue-200">{editingAnalysisData.summary}</p>
+          )}
+        </div>
+
+        {/* Diagnosis Section */}
+        <div className="grid md:grid-cols-2 gap-4">
+          <div className="bg-white dark:bg-[#2a2a35] rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+              Diagnosis
+            </h3>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
+                  Primary Diagnosis
+                </label>
+                {isEditMode ? (
+                  <input
+                    type="text"
+                    value={editingAnalysisData.diagnosis?.primary || ""}
+                    onChange={(e) => updateAnalysisSection('diagnosis', 'primary', e.target.value)}
+                    className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Enter primary diagnosis"
+                  />
+                ) : (
+                  <p className="text-gray-900 dark:text-white">{editingAnalysisData.diagnosis?.primary || "Not specified"}</p>
+                )}
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-600 dark:text-gray-400 mb-1">
+                  Confidence Level
+                </label>
+                {isEditMode ? (
+                  <select
+                    value={editingAnalysisData.diagnosis?.confidence || "Medium"}
+                    onChange={(e) => updateAnalysisSection('diagnosis', 'confidence', e.target.value)}
+                    className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="High">High</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Low">Low</option>
+                  </select>
+                ) : (
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    editingAnalysisData.diagnosis?.confidence === 'High' ? 'bg-green-100 text-green-800' :
+                    editingAnalysisData.diagnosis?.confidence === 'Medium' ? 'bg-yellow-100 text-yellow-800' :
+                    'bg-red-100 text-red-800'
+                  }`}>
+                    {editingAnalysisData.diagnosis?.confidence || "Unknown"}
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Risk Factors */}
+          <div className="bg-white dark:bg-[#2a2a35] rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+              Risk Factors
+            </h3>
+            {isEditMode ? (
+              <div className="space-y-2">
+                {(editingAnalysisData.riskFactors || []).map((factor, index) => (
+                  <div key={index} className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={factor}
+                      onChange={(e) => {
+                        const newFactors = [...(editingAnalysisData.riskFactors || [])];
+                        newFactors[index] = e.target.value;
+                        setEditingAnalysisData(prev => ({ ...prev, riskFactors: newFactors }));
+                      }}
+                      className="flex-1 px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="Enter risk factor"
+                    />
+                    <button
+                      onClick={() => {
+                        const newFactors = editingAnalysisData.riskFactors?.filter((_, i) => i !== index) || [];
+                        setEditingAnalysisData(prev => ({ ...prev, riskFactors: newFactors }));
+                      }}
+                      className="text-red-500 hover:text-red-700"
+                    >
+                      <IconX size={16} />
+                    </button>
+                  </div>
+                ))}
+                <button
+                  onClick={() => {
+                    const newFactors = [...(editingAnalysisData.riskFactors || []), ""];
+                    setEditingAnalysisData(prev => ({ ...prev, riskFactors: newFactors }));
+                  }}
+                  className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                >
+                  + Add Risk Factor
+                </button>
+              </div>
+            ) : (
+              <ul className="space-y-1">
+                {editingAnalysisData.riskFactors?.map((factor, index) => (
+                  <li key={index} className="text-sm text-gray-700 dark:text-gray-300 flex items-center">
+                    <span className="w-2 h-2 bg-red-400 rounded-full mr-2"></span>
+                    {factor}
+                  </li>
+                )) || <li className="text-sm text-gray-500">No specific risk factors identified</li>}
+              </ul>
+            )}
+          </div>
+        </div>
+
+        {/* Recommendations */}
+        <div className="bg-white dark:bg-[#2a2a35] rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            Recommendations
+          </h3>
+          <div className="grid md:grid-cols-3 gap-4">
+            {['immediate', 'shortTerm', 'longTerm'].map((type) => (
+              <div key={type}>
+                <h4 className={`font-medium mb-2 ${
+                  type === 'immediate' ? 'text-red-600 dark:text-red-400' :
+                  type === 'shortTerm' ? 'text-yellow-600 dark:text-yellow-400' :
+                  'text-green-600 dark:text-green-400'
+                }`}>
+                  {type === 'immediate' ? 'Immediate Actions' :
+                   type === 'shortTerm' ? 'Short Term (1-3 months)' :
+                   'Long Term (3+ months)'}
+                </h4>
+                {isEditMode ? (
+                  <div className="space-y-2">
+                    {(editingAnalysisData.recommendations?.[type] || []).map((rec, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={rec}
+                          onChange={(e) => {
+                            const newRecs = [...(editingAnalysisData.recommendations?.[type] || [])];
+                            newRecs[index] = e.target.value;
+                            setEditingAnalysisData(prev => ({
+                              ...prev,
+                              recommendations: { ...prev.recommendations, [type]: newRecs }
+                            }));
+                          }}
+                          className="flex-1 px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                          placeholder="Enter recommendation"
+                        />
+                        <button
+                          onClick={() => {
+                            const newRecs = editingAnalysisData.recommendations?.[type]?.filter((_, i) => i !== index) || [];
+                            setEditingAnalysisData(prev => ({
+                              ...prev,
+                              recommendations: { ...prev.recommendations, [type]: newRecs }
+                            }));
+                          }}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          <IconX size={14} />
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      onClick={() => {
+                        const newRecs = [...(editingAnalysisData.recommendations?.[type] || []), ""];
+                        setEditingAnalysisData(prev => ({
+                          ...prev,
+                          recommendations: { ...prev.recommendations, [type]: newRecs }
+                        }));
+                      }}
+                      className="text-blue-600 hover:text-blue-800 text-sm font-medium"
+                    >
+                      + Add Recommendation
+                    </button>
+                  </div>
+                ) : (
+                  <ul className="space-y-1">
+                    {editingAnalysisData.recommendations?.[type]?.map((rec, index) => (
+                      <li key={index} className="text-sm text-gray-700 dark:text-gray-300">• {rec}</li>
+                    )) || <li className="text-sm text-gray-500">No recommendations</li>}
+                  </ul>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Detailed Analysis */}
+        <div className="bg-white dark:bg-[#2a2a35] rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+            Detailed Analysis
+          </h3>
+          {isEditMode ? (
+            <textarea
+              value={editingAnalysisData.detailedAnalysis || ""}
+              onChange={(e) => setEditingAnalysisData(prev => ({ ...prev, detailedAnalysis: e.target.value }))}
+              className="w-full px-3 py-2 bg-gray-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              rows={6}
+              placeholder="Enter detailed analysis..."
+            />
+          ) : (
+            <div className="prose prose-sm max-w-none dark:prose-invert">
+              <ReactMarkdown>{editingAnalysisData.detailedAnalysis}</ReactMarkdown>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   const renderAnalysisSection = () => {
+    if (isEditMode) {
+      return renderEditableAnalysisSection();
+    }
+
     if (!analysisData && !analysisResult) {
       return (
         <div className="text-center py-8">
@@ -431,18 +732,105 @@ Focus on providing actionable, evidence-based recommendations while maintaining 
     );
   };
 
-  return (
-    <>
-      <div className="w-full max-w-2xl mx-auto mt-8 mb-6 rounded-xl bg-[#1c1c24] p-6 shadow-lg">
-        <div className="flex flex-col gap-2">
-          <div className="text-2xl font-bold text-white">{state.recordName}</div>
-          <div className="text-xs text-gray-400">
-            Created: {state.createdAt ? new Date(state.createdAt).toLocaleString() : "Unknown"}
+  const handleDeleteRecord = async () => {
+    try {
+      await deleteRecord(state.id);
+      setShowDeleteConfirm(false);
+      // Navigate back to records list after deletion
+      navigate("/records");
+    } catch (error) {
+      console.error("Error deleting record:", error);
+    }
+  };
+
+  const renderEditControls = () => (
+    <div className="flex items-center gap-2 mb-4">
+      <button
+        onClick={handleEditToggle}
+        className={`inline-flex items-center gap-x-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+          isEditMode
+            ? "bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+            : "bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/40"
+        }`}
+      >
+        {isEditMode ? (
+          <>
+            <IconX size={16} />
+            Cancel
+          </>
+        ) : (
+          <>
+            <IconEdit size={16} />
+            Edit Record
+          </>
+        )}
+      </button>
+      
+      {isEditMode && (
+        <button
+          onClick={handleSaveChanges}
+          disabled={saving}
+          className="inline-flex items-center gap-x-2 rounded-lg bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+        >
+          <IconCheck size={16} />
+          {saving ? "Saving..." : "Save Changes"}
+        </button>
+      )}
+
+      <button
+        onClick={() => setShowDeleteConfirm(true)}
+        className="inline-flex items-center gap-x-2 rounded-lg bg-red-100 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-200 dark:bg-red-900/20 dark:text-red-400 dark:hover:bg-red-900/40"
+      >
+        <IconTrash size={16} />
+        Delete
+      </button>
+    </div>
+  );
+
+  const renderFolderInfo = () => (
+    <div className="w-full max-w-2xl mx-auto mt-8 mb-6 rounded-xl bg-[#1c1c24] p-6 shadow-lg">
+      <div className="flex flex-col gap-2">
+        {isEditMode ? (
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Folder Name
+              </label>
+              <input
+                type="text"
+                value={editingRecordName}
+                onChange={(e) => setEditingRecordName(e.target.value)}
+                className="w-full px-3 py-2 bg-[#2a2a35] border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Enter folder name"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-1">
+                Analysis Notes
+              </label>
+              <textarea
+                value={editingAnalysis}
+                onChange={(e) => setEditingAnalysis(e.target.value)}
+                rows={4}
+                className="w-full px-3 py-2 bg-[#2a2a35] border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                placeholder="Add your notes or modify the analysis..."
+              />
+            </div>
           </div>
-          <div className="text-xs text-green-400 font-semibold">
-            Files: {files.length}
-          </div>
-        </div>
+        ) : (
+          <>
+            <div className="text-2xl font-bold text-white">{state.recordName}</div>
+            <div className="text-xs text-gray-400">
+              Created: {state.createdAt ? new Date(state.createdAt).toLocaleString() : "Unknown"}
+            </div>
+            <div className="text-xs text-green-400 font-semibold">
+              Files: {files.length}
+            </div>
+          </>
+        )}
+      </div>
+      
+      {!isEditMode && (
         <div className="mt-4">
           <h3 className="text-lg font-semibold text-white mb-2">Files</h3>
           {files.length > 0 ? (
@@ -474,7 +862,15 @@ Focus on providing actionable, evidence-based recommendations while maintaining 
             <div className="text-gray-500 italic text-center py-4">No files uploaded yet.</div>
           )}
         </div>
-      </div>
+      )}
+    </div>
+  );
+
+  return (
+    <>
+      {renderEditControls()}
+      {renderFolderInfo()}
+      
       <div className="flex flex-wrap gap-[26px]">
         <button
           type="button"
@@ -543,6 +939,34 @@ Focus on providing actionable, evidence-based recommendations while maintaining 
           </div>
         </div>
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white dark:bg-[#1c1c24] rounded-lg p-6 max-w-md w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+              Delete Record
+            </h3>
+            <p className="text-gray-600 dark:text-gray-300 mb-6">
+              Are you sure you want to delete "{state.recordName}"? This action cannot be undone and will remove all associated files and analysis data.
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteRecord}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
