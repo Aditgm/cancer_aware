@@ -21,9 +21,13 @@ const Profile = () => {
   useEffect(() => {
     const ensureUser = async () => {
       if (user?.email?.address && currentUser === null) {
-        console.log("User not found, creating user:", user.email.address);
+        // Try to get name from user object
+        const username =
+          user.name ||
+          user.displayName ||
+          (user.email?.address ? user.email.address.split("@")[0] : "");
         await createUser({
-          username: user.email.address.split("@")[0],
+          username,
           age: 0,
           location: "",
           folders: [],
@@ -34,7 +38,6 @@ const Profile = () => {
           screeningStatus: "never",
           cancerType: "",
         });
-        console.log("User created, fetching again:", user.email.address);
         await fetchUserByEmail(user.email.address);
       }
     };
