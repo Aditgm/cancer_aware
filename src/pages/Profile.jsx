@@ -3,11 +3,40 @@ import { useStateContext } from "../context";
 import { usePrivy } from "@privy-io/react-auth";
 
 const Profile = () => {
-  const { currentUser, fetchUserByEmail, updateUser } = useStateContext();
+  const { currentUser, fetchUserByEmail, updateUser, createUser } = useStateContext();
   const { user } = usePrivy();
-   const [form, setForm] = useState({ username: "", age: "", location: "", cancerHistory: "no", screeningStatus: "never", cancerType: "" });
+  const [form, setForm] = useState({ username: "", age: "", location: "", cancerHistory: "no", screeningStatus: "never", cancerType: "" });
   const [editing, setEditing] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  // Try to fetch user on mount
+  useEffect(() => {
+    if (!currentUser && user?.email?.address) {
+      fetchUserByEmail(user.email.address);
+    }
+  }, [currentUser, fetchUserByEmail, user]);
+
+  // If user not found, create user and fetch again
+  useEffect(() => {
+    const ensureUser = async () => {
+      if (user?.email?.address && currentUser === null) {
+        await createUser({
+          username: user.email.address.split("@")[0],
+          age: 0,
+          location: "",
+          folders: [],
+          treatmentCounts: 0,
+          folder: [],
+          createdBy: user.email.address,
+          cancerHistory: "no",
+          screeningStatus: "never",
+          cancerType: "",
+        });
+        await fetchUserByEmail(user.email.address);
+      }
+    };
+    ensureUser();
+  }, [user, currentUser, createUser, fetchUserByEmail]);
 
   useEffect(() => {
     if (!currentUser) {
