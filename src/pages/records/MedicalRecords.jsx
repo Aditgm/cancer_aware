@@ -70,7 +70,8 @@ const MedicalRecords = () => {
 
   useEffect(() => {
     if (records) {
-      setUserRecords(records);
+      const sorted = [...records].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      setUserRecords(sorted);
     }
   }, [records]);
 
@@ -90,6 +91,8 @@ const MedicalRecords = () => {
         analysisResult: "",
         kanbanRecords: "",
         createdBy: user.email.address,
+        createdAt: new Date().toISOString(),
+        files: [],
       });
       if (newRecord) {
         await fetchUserRecords(user.email.address);
@@ -150,6 +153,7 @@ const MedicalRecords = () => {
               key={record.recordName}
               record={record}
               onNavigate={handleNavigate}
+              numFiles={record.files ? record.files.length : 0}
             />
           ))
         ) : (
