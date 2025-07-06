@@ -3,8 +3,8 @@ import { IconCirclePlus } from "@tabler/icons-react";
 import { useNavigate } from "react-router-dom";
 import { usePrivy } from "@privy-io/react-auth";
 import { useStateContext } from "../../context/index";
-import CreateRecordModal from "./components/create-record-modal"; // Adjust the import path
-import RecordCard from "./components/record-card"; // Adjust the import path
+import CreateRecordModal from "./components/create-record-modal";
+import RecordCard from "./components/record-card";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -18,17 +18,37 @@ const Index = () => {
   } = useStateContext();
   const [userRecords, setUserRecords] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (user) {
-      fetchUserByEmail(user.email.address);
-      fetchUserRecords(user.email.address);
-    }
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        if (user && user.email?.address) {
+          console.log("Loading user data for:", user.email.address);
+          await fetchUserByEmail(user.email.address);
+          await fetchUserRecords(user.email.address);
+        }
+      } catch (err) {
+        console.error("Error loading records:", err);
+        setError("Failed to load records");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
   }, [user, fetchUserByEmail, fetchUserRecords]);
 
   useEffect(() => {
-    setUserRecords(records);
-    localStorage.setItem("userRecords", JSON.stringify(records));
+    if (records) {
+      console.log("Records updated:", records);
+      setUserRecords(records);
+      localStorage.setItem("userRecords", JSON.stringify(records));
+    }
   }, [records]);
 
   const handleOpenModal = () => {
@@ -56,7 +76,7 @@ const Index = () => {
         }
       }
     } catch (e) {
-      console.log(e);
+      console.error("Error creating record:", e);
       handleCloseModal();
     }
   };
@@ -69,6 +89,26 @@ const Index = () => {
       state: filteredRecords[0],
     });
   };
+
+  if (loading) {
+    return (
+      <div className="flex flex-wrap gap-[26px]">
+        <div className="w-full flex justify-center items-center min-h-[400px]">
+          <div className="text-white text-lg">Loading records...</div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-wrap gap-[26px]">
+        <div className="w-full flex justify-center items-center min-h-[400px]">
+          <div className="text-red-400 text-lg">{error}</div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-wrap gap-[26px]">
@@ -88,13 +128,19 @@ const Index = () => {
       />
 
       <div className="grid w-full gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-4">
-        {userRecords?.map((record) => (
-          <RecordCard
-            key={record.recordName}
-            record={record}
-            onNavigate={handleNavigate}
-          />
-        ))}
+        {userRecords && userRecords.length > 0 ? (
+          userRecords.map((record) => (
+            <RecordCard
+              key={record.recordName}
+              record={record}
+              onNavigate={handleNavigate}
+            />
+          ))
+        ) : (
+          <div className="col-span-full flex justify-center items-center min-h-[200px]">
+            <div className="text-white text-lg">No records found. Create your first record!</div>
+          </div>
+        )}
       </div>
     </div>
   );
